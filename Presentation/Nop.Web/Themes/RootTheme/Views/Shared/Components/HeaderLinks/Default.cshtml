@@ -1,0 +1,185 @@
+﻿@model HeaderLinksModel
+@using Nop.Core.Domain.Customers
+@inject Nop.Core.IWebHelper webHelper
+<link href="~/css/style.css" rel="stylesheet" />
+
+<script>
+    jQuery(document).ready(function ($) {
+        //if you change this breakpoint in the style.css file (or _layout.scss if you use SASS), don't forget to update this value as well
+        var $L = 1200,
+            $menu_navigation = $('#main-nav'),
+            $cart_trigger = $('#cd-cart-trigger'),
+            $hamburger_icon = $('#cd-hamburger-menu'),
+            $lateral_cart = $('#cd-cart'),
+            $shadow_layer = $('#cd-shadow-layer');
+
+        //open lateral menu on mobile
+        $hamburger_icon.on('click', function (event) {
+            event.preventDefault();
+            //close cart panel (if it's open)
+            $lateral_cart.removeClass('speed-in');
+            toggle_panel_visibility($menu_navigation, $shadow_layer, $('body'));
+        });
+
+        //open cart
+        $cart_trigger.on('click', function (event) {
+            event.preventDefault();
+            //close lateral menu (if it's open)
+            $menu_navigation.removeClass('speed-in');
+            toggle_panel_visibility($lateral_cart, $shadow_layer, $('body'));
+        });
+
+        //close lateral cart or lateral menu
+        $shadow_layer.on('click', function () {
+            $shadow_layer.removeClass('is-visible');
+            // firefox transitions break when parent overflow is changed, so we need to wait for the end of the trasition to give the body an overflow hidden
+            if ($lateral_cart.hasClass('speed-in')) {
+                $lateral_cart.removeClass('speed-in').on('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function () {
+                    $('body').removeClass('overflow-hidden');
+                });
+                $menu_navigation.removeClass('speed-in');
+            } else {
+                $menu_navigation.removeClass('speed-in').on('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function () {
+                    $('body').removeClass('overflow-hidden');
+                });
+                $lateral_cart.removeClass('speed-in');
+            }
+        });
+
+        //move #main-navigation inside header on laptop
+        //insert #main-navigation after header on mobile
+        move_navigation($menu_navigation, $L);
+        $(window).on('resize', function () {
+            move_navigation($menu_navigation, $L);
+
+            if ($(window).width() >= $L && $menu_navigation.hasClass('speed-in')) {
+                $menu_navigation.removeClass('speed-in');
+                $shadow_layer.removeClass('is-visible');
+                $('body').removeClass('overflow-hidden');
+            }
+
+        });
+    });
+
+    function toggle_panel_visibility($lateral_panel, $background_layer, $body) {
+        if ($lateral_panel.hasClass('speed-in')) {
+            // firefox transitions break when parent overflow is changed, so we need to wait for the end of the trasition to give the body an overflow hidden
+            $lateral_panel.removeClass('speed-in').one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function () {
+                $body.removeClass('overflow-hidden');
+            });
+            $background_layer.removeClass('is-visible');
+
+        } else {
+            $lateral_panel.addClass('speed-in').one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function () {
+                $body.addClass('overflow-hidden');
+            });
+            $background_layer.addClass('is-visible');
+        }
+    }
+
+    function move_navigation($navigation, $MQ) {
+        if ($(window).width() >= $MQ) {
+            $navigation.detach();
+            $navigation.appendTo('header');
+        } else {
+            $navigation.detach();
+            $navigation.insertAfter('header');
+        }
+    }
+</script>
+<nav class="header-links">
+    <ul class="nav navbar-right" style="margin-right:63px;">
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HeaderLinksBefore, additionalData = Model })
+        @if (Model.IsAuthenticated)
+        {
+            <li class="d-inline-block"><a href="@Url.RouteUrl("CustomerInfo")" class="ico-account d-inline-block">@T("Account.MyAccount")@*@Model.CustomerName*@</a></li>
+            <li class="d-inline-block"><a href="@Url.RouteUrl("Logout")" class="ico-logout d-inline-block">@T("Account.Logout")</a></li>
+        }
+        else
+        {
+            var returnUrl = Context.Request.Query.TryGetValue("returnUrl", out var url) && !StringValues.IsNullOrEmpty(url)
+            ? url.ToString()
+            : webHelper.GetRawUrl(Context.Request);
+
+            @if (Model.RegistrationType != UserRegistrationType.Disabled)
+            {
+                <li class="d-inline-block"><a href="@Url.RouteUrl("Register", new { returnUrl })" class="ico-register d-inline-block">@T("Account.Register")</a></li>
+            }
+            <li class="d-inline-block"><a href="@Url.RouteUrl("Login", new { returnUrl })" class="ico-login d-inline-block">@T("Account.Login")</a></li>
+        }
+        @if (Model.AllowPrivateMessages)
+        {
+            <li class="d-inline-block">
+                <a href="@Url.RouteUrl("PrivateMessages", new { tab = "" })" class="ico-inbox d-inline-block">
+                    <span class="inbox-label d-inline-block">@T("PrivateMessages.Inbox")</span>
+                    <span class="inbox-unread d-inline-block">@Model.UnreadPrivateMessages</span>
+                </a>
+            </li>
+        }
+        @if (Model.WishlistEnabled)
+        {
+            <li class="d-inline-block">
+                <a href="@Url.RouteUrl("Wishlist")" class="ico-wishlist d-inline-block">
+                    <span class="wishlist-label d-inline-block">@T("Wishlist")</span>
+                    <span class="wishlist-qty d-inline-block">@T("Wishlist.HeaderQuantity", Model.WishlistItems)</span>
+                </a>
+            </li>
+        }
+        @if (Model.ShoppingCartEnabled)
+        {
+            <li id="topcartlink" class="d-inline-block">
+                <div id="cd-shadow-layer"></div>
+
+                <div>
+                    <a id="cd-cart-trigger" href="@Url.RouteUrl("ShoppingCart")">
+                        @T("ShoppingCart")
+                        <span class="cart-qty d-inline-block">@T("ShoppingCart.HeaderQuantity", Model.ShoppingCartItems)</span>
+                    </a>
+                </div>
+            </li>
+            @*<li>
+        <a href="@Url.RouteUrl("b ")" class="ico-cart d-inline-block">
+        <span class="cart-label d-inline-block">@T("ShoppingCart")</span>
+        <span class="cart-qty d-inline-block">@T("ShoppingCart.HeaderQuantity", Model.ShoppingCartItems)</span>
+        </a>
+        </li>*@
+        }
+
+
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HeaderLinksAfter, additionalData = Model })
+
+    </ul>
+
+    @if (Model.AllowPrivateMessages && !string.IsNullOrEmpty(Model.AlertMessage))
+    {
+        //new private message notification
+        <script asp-location="Footer">
+            $(document).ready(function () {
+                displayPopupNotification('@Html.Raw(JavaScriptEncoder.Default.Encode(Model.AlertMessage))', 'success', false);
+            });
+        </script>
+    }
+    @if (Model.ShoppingCartEnabled)
+    {
+        <script asp-location="Footer">
+            $(document).ready(function () {
+            @*$('.header-links-wrapper').on('mouseenter', '#topcartlink', function () {*@
+                    $('.header-links-wrapper').on('mouseenter', '#topcartlink', function () {
+            @*$('#flyout-cart').addClass('active');
+                        $('#cd-cart').addClass('active');*@
+                            });
+                $('.header-links-wrapper').on('mouseleave', '#topcartlink', function () {
+                    $('#flyout-cart').removeClass('active');
+                });
+                $('.header-links-wrapper').on('mouseenter', '#flyout-cart', function () {
+                    $('#flyout-cart').addClass('active');
+                });
+                $('.header-links-wrapper').on('mouseleave', '#flyout-cart', function () {
+                    $('#flyout-cart').removeClass('active');
+                });
+            });
+        </script>
+    }
+</nav>
+
+
