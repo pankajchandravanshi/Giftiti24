@@ -1,0 +1,71 @@
+﻿@model IList<ProductOverviewModel>
+<style>
+    .title-tgifts {
+        font-size: 4.5vw;
+        font-family: "Playfair Display", serif;
+        font-weight: 600;
+        line-height: 1.2;
+        word-wrap: break-word;
+        text-align: center;
+        top:70px;
+        position:relative;
+    }
+</style>
+@if (Model.Count > 0)
+{
+    <div class="product-grid home-page-product-grid">
+            @*<div class="title">
+                <strong>@T("Homepage.Products")</strong>
+            </div>*@
+        <div class="title-tgifts">Trending Gifts</div>
+        <div class="item-grid" style="top:85px; position:relative">
+            <div class="row">
+                @foreach (var item in Model)
+                {
+                    <div class="item-box col-12 col-sm-6 col-md-4 col-lg-3 col-xl-3">
+                        @await Html.PartialAsync("_ProductBox", item)
+                    </div>
+                }
+            </div>
+        </div>
+       @* <div class="row">
+            <div style="width: 705px; height: 390px; left: 0px;  position: relative">
+                <div style="width: 705px; height: 390px; left: 0px; top: 0px; position: absolute; background: linear-gradient(0deg, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.65) 100%)"></div>
+                <div style="left: 144px; top: 133px; position: absolute; flex-direction: column; justify-content: flex-start; align-items: center; gap: 30px; display: inline-flex">
+                    <div style="text-align: center; color: white; font-size: 52px; font-family: Playfair Display; font-weight: 600; line-height: 72.80px; word-wrap: break-word">Wooden Carvings</div>
+                    <div style="justify-content: flex-start; align-items: center; gap: 10px; display: inline-flex">
+                        <div style="text-align: center; color: #F28424; font-size: 16px; font-family: Work Sans; font-weight: 600; line-height: 22.40px; word-wrap: break-word">View Collection</div>
+                        <div style="width: 12px; height: 12px; position: relative">
+                            <div style="width: 6px; height: 11px; left: 3px; top: 0.50px; position: absolute; background: #F28424"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="width: 705px; height: 390px; left: 735px;  position: absolute">
+                <div style="width: 705px; height: 390px; left: 0px; top: 0px; position: absolute; background: linear-gradient(0deg, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.65) 100%)"></div>
+                <div style="left: 203px; top: 133px; position: absolute; flex-direction: column; justify-content: center; align-items: center; gap: 30px; display: inline-flex">
+                    <div style="text-align: center; color: white; font-size: 52px; font-family: Playfair Display; font-weight: 600; line-height: 72.80px; word-wrap: break-word">Home Decor</div>
+                    <div style="justify-content: flex-start; align-items: center; gap: 10px; display: inline-flex">
+                        <div style="text-align: center; color: #F28424; font-size: 16px; font-family: Work Sans; font-weight: 600; line-height: 22.40px; word-wrap: break-word">View Collection</div>
+                        <div style="width: 12px; height: 12px; position: relative">
+                            <div style="width: 6px; height: 11px; left: 3px; top: 0.50px; position: absolute; background: #F28424"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="width: 1440px; height: 500px; left: 0px;top:40px; position: relative">
+                <div style="width: 1440px; height: 500px; left: 0px; top: 0px; position: absolute; background: linear-gradient(0deg, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.65) 100%)"></div>
+                <div style="left: 552px; top: 188px; position: absolute; flex-direction: column; justify-content: center; align-items: center; gap: 30px; display: inline-flex">
+                    <div style="text-align: center; color: white; font-size: 52px; font-family: Playfair Display; font-weight: 600; line-height: 72.80px; word-wrap: break-word">Vintage Wines</div>
+                    <div style="justify-content: flex-start; align-items: center; gap: 10px; display: inline-flex">
+                        <div style="text-align: center; color: #F28424; font-size: 16px; font-family: Work Sans; font-weight: 600; line-height: 22.40px; word-wrap: break-word">View Collection</div>
+                        <div style="width: 12px; height: 12px; position: relative">
+                            <div style="width: 6px; height: 11px; left: 3px; top: 0.50px; position: absolute; background: #F28424"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>*@
+    </div>
+}
