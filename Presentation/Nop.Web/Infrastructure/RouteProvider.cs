@@ -149,9 +149,8 @@ namespace Nop.Web.Infrastructure
             endpointRouteBuilder.MapControllerRoute(name: "ManufacturerList",
                 pattern: $"{lang}/manufacturer/all/",
                 defaults: new { controller = "Catalog", action = "ManufacturerAll" });
-
-            //categoryAll
-            endpointRouteBuilder.MapControllerRoute(name: "CategotyList",
+            //category
+            endpointRouteBuilder.MapControllerRoute(name: "categoryList",
                 pattern: $"{lang}/category/all/",
                 defaults: new { controller = "Catalog", action = "CategoryAll" });
 
@@ -164,6 +163,10 @@ namespace Nop.Web.Infrastructure
             endpointRouteBuilder.MapControllerRoute(name: "AddProductToCart-Catalog",
                 pattern: $"addproducttocart/catalog/{{productId:min(0)}}/{{shoppingCartTypeId:min(0)}}/{{quantity:min(0)}}",
                 defaults: new { controller = "ShoppingCart", action = "AddProductToCart_Catalog" });
+            //dd
+            endpointRouteBuilder.MapControllerRoute(name: "SubProductToCart-Catalog",
+                pattern: $"subproducttocart/catalog/{{productId:min(0)}}/{{shoppingCartTypeId:min(0)}}/{{updateQuantity:min(0)}}",
+                defaults: new { controller = "ShoppingCart", action = "SubProductToCart_Catalog" });
 
             //add product to cart (with attributes and options). used on the product details pages. (AJAX)
             endpointRouteBuilder.MapControllerRoute(name: "AddProductToCart-Details",

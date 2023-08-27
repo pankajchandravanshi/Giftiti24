@@ -1,4 +1,6 @@
-﻿@*@model MiniShoppingCartModel
+﻿@using Nop.Core.Domain.Orders
+
+@*@model MiniShoppingCartModel
 
 @using Nop.Core.Domain.Catalog
 
@@ -51,7 +53,7 @@
                 @if (Model.DisplayShoppingCartButton)
                 {
                     <button type="button" class="button-2 btn btn-primary cart-button" onclick="setLocation('@(Url.RouteUrl("ShoppingCart"))')">@T("ShoppingCart.Mini.ViewCart")</button>
-                    
+
                 }
                 @if (Model.DisplayCheckoutButton)
                 {
@@ -75,103 +77,135 @@
 
 @using Nop.Core.Domain.Catalog
 
+    <div id="cd-cart">
+        <div style="float: right;
+    margin-top: -38px;">
+            <button id="close-btn" style="width:37px;" class="closes">X</button>
+        </div>
+    <div class="row">
+        <div class="col-lg-7">
+            <h2 style="margin-top: -35px;margin-left: 110px;width: 105px;">Your Cart (@Model.TotalProducts) </h2>
+        </div>
+        @* <div class="col-lg-5">
+            <button id="close-btn" style="width:37px;" class="closes">X</button>
+        </div> *@
+    </div>
+    <form asp-route="ShoppingCart" method="post" enctype="multipart/form-data" id="shopping-cart-popup-form">
 
-<div id="cd-cart">
-
-    <h2>Cart</h2>
-
-    @if (Model.TotalProducts > 0)
-    {
 
 
+        @if (Model.TotalProducts > 0)
+        {
+            <ul class="cd-cart-items">
+                @for (var i = 0; i < Model.Items.Count; i++)
+                {
+                    var item = Model.Items[i];
+
+                        <li class="list-group-item">
+                            <div class="row align-items-center">
+                            @if (Model.ShowProductImages)
+                            {
+                                        <div class="col-4">
+                                            <a href="@(Url.RouteUrl<Product>(new { SeName = item.ProductSeName }))" title="@item.Picture.Title">
+                                                <img class="img-fluid" alt="@item.Picture.AlternateText" src="@item.Picture.ImageUrl" title="@item.Picture.Title" />
+                                            </a>
+                                        </div>
+                            }
+
+                                <div class="col-8">
+                                    <p class="font-size-sm font-weight-bold mb-0">
+                                        <a href="@(Url.RouteUrl<Product>(new { SeName = item.ProductSeName }))">@item.ProductName</a>
+
+                                    @if (!string.IsNullOrEmpty(item.AttributeInfo))
+                                    {
+                                                <div class="attributes">
+                                            @Html.Raw(item.AttributeInfo)
+                                                </div>
+                                    }
+                                        <br>
+                                        <span class="text-body">@item.UnitPrice</span>&nbsp;
+                                        <span class="text-body" style="display:none;">@item.Id</span>&nbsp;
+                                    @*<span class="font-size-xs text-gray-350 text-decoration-line-through mr-2 ng-star-inserted"> @item.UnitPrice </span>*@
+                                    </p>
+                                    <p class="mb-2 font-size-sm text-muted">
+                                        <!----><!---->
+                                    </p>
+                                    <div class="d-flex align-items-center">
+                                        <div>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                        <button class="btn btn-secondary btn-xs rounded-0" id="minus-btn" onclick="AjaxCart.subproducttocart_catalog('@Url.RouteUrl("SubProductToCart-Catalog", new {productId = item.ProductId, shoppingCartTypeId = (int) ShoppingCartType.ShoppingCart,updateQuantity = item.Quantity-1,itemId=item.Id,price=item.UnitPriceValue})');return false;"><i class="fa fa-minus"></i></button>
+                                                    </div>
+
+                                                <input class="form-control form-control-xs rounded-0 ng-untouched ng-pristine ng-valid" id="item_qty" type="number" value="@item.Quantity">
+                                                    <div class="input-group-prepend">
+                                                        <button class="btn btn-secondary btn-xs  rounded-0" id="plus-btn" onclick="AjaxCart.addproducttocart_catalog('@Url.RouteUrl("AddProductToCart-Catalog", new {productId = item.ProductId, shoppingCartTypeId = (int) ShoppingCartType.ShoppingCart, quantity = 1})');return false;"><i class="fa fa-plus"></i></button>
+                                                        </div>
+                                            </div>
+                                        </div>
+                                    @*   <a class="btn btn-danger btn-xxs px-2 py-0 text-white font-size-xs ml-auto rounded-0 removecartitems" href="javascript:void(0)">
+                        <i class="fe fe-x"></i> remove
+                        </a> *@
+                                            <input style="display: none;" type="checkbox" name="removefromcart" id="removefromcart@(item.Id)" value="@(item.Id)" aria-label="@T("ShoppingCart.Remove")" />
+                                            <button type="button" name="updatecart" class="btn btn-danger ml-4" onclick="$('#removefromcart@(item.Id)').attr('checked', true); $('#updatecartpopup').click();"><i class="fe fe-x"></i>X</button>
 
 
-
-
-
-
-        <ul class="cd-cart-items">
-            @for (var i = 0; i < Model.Items.Count; i++)
-            {
-                var item = Model.Items[i];
-
-                <li class="list-group-item">
-                    <div class="row align-items-center">
-                        @if (Model.ShowProductImages)
-                        {
-                            <div class="col-4">
-                                <a href="@(Url.RouteUrl<Product>(new { SeName = item.ProductSeName }))" title="@item.Picture.Title">
-                                    <img class="img-fluid" alt="@item.Picture.AlternateText" src="@item.Picture.ImageUrl" title="@item.Picture.Title" />
-                                </a>
-                            </div>
-                        }
-
-                        <div class="col-8">
-                            <p class="font-size-sm font-weight-bold mb-0">
-                                <a href="@(Url.RouteUrl<Product>(new { SeName = item.ProductSeName }))">@item.ProductName</a>
-
-                                @if (!string.IsNullOrEmpty(item.AttributeInfo))
-                                {
-                                    <div class="attributes">
-                                        @Html.Raw(item.AttributeInfo)
-                                    </div>
-                                }
-                                <br>
-                                <span class="text-body">@item.UnitPrice</span>&nbsp;
-                                @*<span class="font-size-xs text-gray-350 text-decoration-line-through mr-2 ng-star-inserted"> @item.UnitPrice </span>*@
-                            </p>
-                            <p class="mb-2 font-size-sm text-muted">
-                                <!----><!---->
-                            </p>
-                            <div class="d-flex align-items-center">
-                                <div>
-                                    <div class="input-group">
-                                        <div class="input-group-prepend"><button class="btn btn-secondary btn-xs rounded-0" id="minus-btn"><i class="fa fa-minus"></i></button></div>
-                                        <input class="form-control form-control-xs rounded-0 ng-untouched ng-pristine ng-valid" id="item_qty" type="number" value="@item.Quantity">
-                                        <div class="input-group-prepend"><button class="btn btn-secondary btn-xs  rounded-0" id="plus-btn"><i class="fa fa-plus"></i></button></div>
                                     </div>
                                 </div>
-                                <a class="btn btn-danger btn-xxs px-2 py-0 text-white font-size-xs ml-auto rounded-0 removeCartItems" href="javascript:void(0)">
-                                    <i class="fe fe-x"></i> Remove
-                                </a>
+
+
+
+
                             </div>
-                        </div>
+                        </li>
 
 
 
-
-                    </div>
-                </li>
+                }
 
 
+            </ul> <!-- cd-cart-items -->
+
+            <div class="cd-cart-total">
+                <p>Total <span>@Model.SubTotal</span></p>
+            </div> <!-- cd-cart-total -->
+            @*@if (Model.DisplayCheckoutButton)*@
+            {
+                var checkoutUrl = "";
+                if (Model.AnonymousCheckoutAllowed && Model.CurrentCustomerIsGuest)
+                {
+                    checkoutUrl = Url.RouteUrl("LoginCheckoutAsGuest", new { returnUrl = Url.RouteUrl("ShoppingCart") });
+                }
+                else
+                {
+                    checkoutUrl = Url.RouteUrl("Checkout");
+                }
+                    <button type="button" class="checkout-btn checkout-button" onclick="setLocation('@checkoutUrl')">@T("Checkout.Button")</button>
+                 <p class="cd-go-to-cart"><a href="@Url.RouteUrl("ShoppingCart")">Go to cart page</a></p>
 
             }
 
-        </ul> <!-- cd-cart-items -->
-
-        <div class="cd-cart-total">
-            <p>Total <span>@Model.SubTotal</span></p>
-        </div> <!-- cd-cart-total -->
-        @*@if (Model.DisplayCheckoutButton)*@
+        }
+        else
         {
-            var checkoutUrl = "";
-            if (Model.AnonymousCheckoutAllowed && Model.CurrentCustomerIsGuest)
-            {
-                checkoutUrl = Url.RouteUrl("LoginCheckoutAsGuest", new { returnUrl = Url.RouteUrl("ShoppingCart") });
-            }
-            else
-            {
-                checkoutUrl = Url.RouteUrl("Checkout");
-            }
-            <button type="button" class="checkout-btn checkout-button" onclick="setLocation('@checkoutUrl')">@T("Checkout.Button")</button>
+                <div class="no-data" style="
+    text-align: center;
+    font-weight: 600;
+">
+                @* @T("ShoppingCart.CartIsEmpty") *@
+                Your Cart is empty😞
+                </div>
+
+                        @*<button type="submit" name="continueshopping" class="button-2 btn btn-default">@T("ShoppingCart.ContinueShopping")</button>*@
         }
 
-    }
-    <p class="cd-go-to-cart"><a href="#0">Go to cart page</a></p>
+</form>
 </div>
 
 
-<div id="flyout-cart" class="flyout-cart">
+
+<button style="display: none;" type="button" name="updatecartpopup" id="updatecartpopup" class="button-2 btn btn-default update-cart-button">@T("ShoppingCart.UpdateCart")</button>
+<div id="flyout-cart_old" class="flyout-cart">
 
     <div class="container">
         <div class="mini-shopping-cart row">
@@ -187,40 +221,40 @@
             </div>
             @if (Model.TotalProducts > 0)
             {
-                <div class="items">
+                    <div class="items">
                     @for (var i = 0; i < Model.Items.Count; i++)
                     {
                         var item = Model.Items[i];
-                        <div class="item @(i == 0 ? "first" : null)">
+                                <div class="item @(i == 0 ? "first" : null)">
                             @if (Model.ShowProductImages)
                             {
-                                <div class="picture">
-                                    <a href="@(Url.RouteUrl<Product>(new { SeName = item.ProductSeName }))" title="@item.Picture.Title">
-                                        <img alt="@item.Picture.AlternateText" src="@item.Picture.ImageUrl" title="@item.Picture.Title" />
-                                    </a>
-                                </div>
+                                            <div class="picture">
+                                                <a href="@(Url.RouteUrl<Product>(new { SeName = item.ProductSeName }))" title="@item.Picture.Title">
+                                                    <img alt="@item.Picture.AlternateText" src="@item.Picture.ImageUrl" title="@item.Picture.Title" />
+                                                </a>
+                                            </div>
                             }
-                            <div class="product">
-                                <div class="name">
-                                    <a href="@(Url.RouteUrl<Product>(new { SeName = item.ProductSeName }))">@item.ProductName</a>
-                                </div>
+                                    <div class="product">
+                                        <div class="name">
+                                            <a href="@(Url.RouteUrl<Product>(new { SeName = item.ProductSeName }))">@item.ProductName</a>
+                                        </div>
                                 @if (!string.IsNullOrEmpty(item.AttributeInfo))
                                 {
-                                    <div class="attributes">
+                                                <div class="attributes">
                                         @Html.Raw(item.AttributeInfo)
-                                    </div>
+                                                </div>
                                 }
-                                <div class="price">@T("ShoppingCart.Mini.UnitPrice"): <span>@item.UnitPrice</span></div>
-                                <div class="quantity">@T("ShoppingCart.Mini.Quantity"): <span>@item.Quantity</span></div>
-                            </div>
-                        </div>
+                                        <div class="price">@T("ShoppingCart.Mini.UnitPrice"): <span>@item.UnitPrice</span></div>
+                                        <div class="quantity">@T("ShoppingCart.Mini.Quantity"): <span>@item.Quantity</span></div>
+                                    </div>
+                                </div>
                     }
-                </div>
-                <div class="totals">@T("ShoppingCart.Totals.SubTotal"): <strong>@Model.SubTotal</strong></div>
-                <div class="buttons">
+                    </div>
+                    <div class="totals">@T("ShoppingCart.Totals.SubTotal"): <strong>@Model.SubTotal</strong></div>
+                    <div class="buttons">
                     @if (Model.DisplayShoppingCartButton)
                     {
-                        <button type="button" class="button-2 btn btn-primary cart-button" onclick="setLocation('@(Url.RouteUrl("ShoppingCart"))')">@T("ShoppingCart.Mini.ViewCart")</button>
+                                <button type="button" class="button-2 btn btn-primary cart-button" onclick="setLocation('@(Url.RouteUrl("ShoppingCart"))')">@T("ShoppingCart.Mini.ViewCart")</button>
 
                     }
                     @if (Model.DisplayCheckoutButton)
@@ -234,11 +268,75 @@
                         {
                             checkoutUrl = Url.RouteUrl("Checkout");
                         }
-                        <button type="button" class="button-2 btn btn-primary checkout-button" onclick="setLocation('@checkoutUrl')">@T("Checkout.Button")</button>
+                                <button type="button" class="button-2 btn btn-primary checkout-button" onclick="setLocation('@checkoutUrl')">@T("Checkout.Button")</button>
                     }
-                </div>
+                    </div>
             }
         </div>
     </div>
 </div>
+<script asp-location="Footer">
+    $("#updatecartpopup").on("click", function () {
 
+        $.ajax({
+            cache: false,
+            url: '@Html.Raw(Url.Action("UpdatePopupCart", "shoppingcart"))',
+            data: $('#shopping-cart-popup-form').serialize(),
+            type: 'POST',
+            beforeSend: function () {
+
+                displayAjaxLoading(true);
+            },
+            success: function (response) {
+
+                if (response.updatetopcartsectionhtml) {
+                    $(AjaxCart.topcartselector).html(response.updatetopcartsectionhtml);
+                }
+                if (response.updatetopwishlistsectionhtml) {
+                    $(AjaxCart.topwishlistselector).html(response.updatetopwishlistsectionhtml);
+                }
+                if (response.updateflyoutcartsectionhtml) {
+                    console.log(AjaxCart.flyoutcartselector);
+                    console.log(response.updateflyoutcartsectionhtml);
+                    $(AjaxCart.flyoutcartselector).replaceWith(response.updateflyoutcartsectionhtml);
+                }
+                if (response.message) {
+                    //display notification
+                    if (response.success === true) {
+                        $('#cd-cart').addClass("speed-in");
+                        $('#cd-cart-trigger').addClass("speed-in").trigger("click");
+                        //success
+                        if (AjaxCart.usepopupnotifications === true) {
+                            //displayPopupNotification(response.message, 'success', true);
+                        }
+                        else {
+                            //specify timeout for success messages
+                            //displayBarNotification(response.message, 'success', 3500);
+                        }
+                    }
+                    else {
+                        //error
+                        if (AjaxCart.usepopupnotifications === true) {
+                            displayPopupNotification(response.message, 'error', true);
+                        }
+                        else {
+                            //no timeout for errors
+                            displayBarNotification(response.message, 'error', 0);
+                        }
+                    }
+                    return false;
+                }
+                if (response.redirect) {
+                    location.href = response.redirect;
+                    return true;
+                }
+                return false;
+            },
+            complete: function () {
+                displayAjaxLoading(false);
+            }
+        });
+    });
+
+
+</script>

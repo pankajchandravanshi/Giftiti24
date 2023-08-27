@@ -180,6 +180,7 @@
             }
              @if (!string.IsNullOrEmpty(Model.ProductPrice.OldPrice))
             {
+                
             <div>
                 (You save<span class="price"style="
     color: #028e8b;
@@ -228,6 +229,12 @@
         {
             <span class="sku">
                 @Model.Sku item left.
+            </span>
+        }
+        @if (!string.IsNullOrEmpty(Model.Stockquantity))
+        {
+            <span class="sku">
+                @Model.Stockquantity item left.
             </span>
         }
         <div class="description" @(catalogSettings.ShowShortDescriptionOnCatalogPages ? "" : "data-short-description=none")>

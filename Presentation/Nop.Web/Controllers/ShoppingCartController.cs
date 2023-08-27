@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Extensions.Primitives;
 using Nop.Core;
 using Nop.Core.Caching;
@@ -295,7 +297,7 @@ namespace Nop.Web.Controllers
         }
 
         protected virtual async Task SaveItemAsync(ShoppingCartItem updatecartitem, List<string> addToCartWarnings, Product product,
-           ShoppingCartType cartType, string attributes, decimal customerEnteredPriceConverted, DateTime? rentalStartDate,
+           ShoppingCartType cartType, string? attributes, decimal customerEnteredPriceConverted, DateTime? rentalStartDate,
            DateTime? rentalEndDate, int quantity)
         {
             var customer = await _workContext.GetCurrentCustomerAsync();
@@ -831,7 +833,7 @@ namespace Nop.Web.Controllers
             {
                 var currentStore = await _storeContext.GetCurrentStoreAsync();
                 var currentCustomer = await _workContext.GetCurrentCustomerAsync();
-                
+
                 //we do not calculate price of "customer enters price" option is enabled
                 var (finalPrice, _, _) = await _shoppingCartService.GetUnitPriceAsync(product,
                     currentCustomer,
@@ -1219,7 +1221,165 @@ namespace Nop.Web.Controllers
 
             return View(model);
         }
+        //[HttpPost]        
+        //public virtual async Task<IActionResult> SubProductToCart_Catalog(int productId, int shoppingCartTypeId,
+        //    int quantity, bool forceredirection = false)
+        //{
+        //    if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.EnableShoppingCart))
+        //        return RedirectToRoute("Homepage");
 
+        //    var customer = await _workContext.GetCurrentCustomerAsync();
+        //    var store = await _storeContext.GetCurrentStoreAsync();
+        //    var cart = await _shoppingCartService.GetShoppingCartAsync(customer, ShoppingCartType.ShoppingCart, store.Id);
+
+        //    //get identifiers of items to remove
+        //    //var itemIdsToRemove = form["removefromcart"]
+        //    //    .SelectMany(value => value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+        //    //    .Select(idString => int.TryParse(idString, out var id) ? id : 0)
+        //    //    .Distinct().ToList();
+
+        //    var products = (await _productService.GetProductsByIdsAsync(cart.Select(item => productId).Distinct().ToArray()))
+        //        .ToDictionary(item => item.Id, item => item);
+
+        //    //get order items with changed quantity
+        //    var itemsWithNewQuantity = cart.Select(item => new
+        //    {
+        //        //try to get a new quantity for the item, set 0 for items to remove
+        //        NewQuantity = quantity,  
+        //        Item = item,
+        //        Product = products.ContainsKey(productId) ? products[productId] : null
+        //    }).Where(item => item.NewQuantity != item.Item.Quantity);
+
+        //    //order cart items
+        //    //first should be items with a reduced quantity and that require other products; or items with an increased quantity and are required for other products
+        //    var orderedCart = await itemsWithNewQuantity
+        //        .OrderByDescendingAwait(async cartItem =>
+        //            (cartItem.NewQuantity < cartItem.Item.Quantity &&
+        //             (cartItem.Product?.RequireOtherProducts ?? false)) ||
+        //            (cartItem.NewQuantity > cartItem.Item.Quantity && cartItem.Product != null && (await _shoppingCartService
+        //                 .GetProductsRequiringProductAsync(cart, cartItem.Product)).Any()))
+        //        .ToListAsync();
+
+        //    //try to update cart items with new quantities and get warnings
+        //    var warnings = await orderedCart.SelectAwait(async cartItem => new
+        //    {
+        //        ItemId = cartItem.Item.Id,
+        //        Warnings = await _shoppingCartService.UpdateShoppingCartItemAsync(customer,
+        //            cartItem.Item.Id, cartItem.Item.AttributesXml, cartItem.Item.CustomerEnteredPrice,
+        //            cartItem.Item.RentalStartDateUtc, cartItem.Item.RentalEndDateUtc, cartItem.NewQuantity, true)
+        //    }).ToListAsync();
+
+        //    //updated cart
+        //    cart = await _shoppingCartService.GetShoppingCartAsync(customer, ShoppingCartType.ShoppingCart, store.Id);
+
+        //    //parse and save checkout attributes
+        //    //await ParseAndSaveCheckoutAttributesAsync(cart, form);
+
+        //    //prepare model
+        //    var model = new ShoppingCartModel();
+        //    model = await _shoppingCartModelFactory.PrepareShoppingCartModelAsync(model, cart);
+
+        //    //update current warnings
+        //    foreach (var warningItem in warnings.Where(warningItem => warningItem.Warnings.Any()))
+        //    {
+        //        //find shopping cart item model to display appropriate warnings
+        //        var itemModel = model.Items.FirstOrDefault(item => item.Id == warningItem.ItemId);
+        //        if (itemModel != null)
+        //            itemModel.Warnings = warningItem.Warnings.Concat(itemModel.Warnings).Distinct().ToList();
+        //    }
+
+        //    return View(model);
+        //}
+        //subtract product to cart using AJAX
+        //currently we use this method on catalog pages (category/manufacturer/etc)
+        [HttpPost]
+        public virtual async Task<IActionResult> SubProductToCart_Catalog(int productId, int shoppingCartTypeId,
+            int updateQuantity, int itemId, decimal price, bool forceredirection = false)
+        {
+            var product = await _productService.GetProductByIdAsync(productId);
+            if (product == null)
+            {
+                return Json(new
+                {
+                    redirect = Url.RouteUrl("Homepage")
+                });
+            }
+
+            //we can add only simple products
+            if (product.ProductType != ProductType.SimpleProduct)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Only simple products could be added to the cart"
+                });
+            }
+
+            //update existing shopping cart item
+            var updatecartitemid = productId;
+            //foreach (var formKey in form.Keys)
+            //    if (formKey.Equals($"addtocart_{productId}.UpdatedShoppingCartItemId", StringComparison.InvariantCultureIgnoreCase))
+            //    {
+            //        _ = int.TryParse(form[formKey], out updatecartitemid);
+            //        break;
+            //    }
+
+            ShoppingCartItem updatecartitem = null;
+            if (_shoppingCartSettings.AllowCartItemEditing && updatecartitemid > 0)
+            {
+                var store = await _storeContext.GetCurrentStoreAsync();
+                //search with the same cart type as specified
+                var cart = await _shoppingCartService.GetShoppingCartAsync(await _workContext.GetCurrentCustomerAsync(), (ShoppingCartType)shoppingCartTypeId, store.Id);
+
+                updatecartitem = cart.FirstOrDefault(x => x.Id == updatecartitemid);
+                //not found? let's ignore it. in this case we'll add a new item
+                //if (updatecartitem == null)
+                //{
+                //    return Json(new
+                //    {
+                //        success = false,
+                //        message = "No shopping cart item found to update"
+                //    });
+                //}
+                //is it this product?
+                if (updatecartitem != null && product.Id != updatecartitem.ProductId)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "This product does not match a passed shopping cart item identifier"
+                    });
+                }
+            }
+
+            var addToCartWarnings = new List<string>();
+
+            //customer entered price
+            Decimal customerEnteredPriceConverted = price;//Convert.ToDecimal(20.0);
+
+            //entered quantity
+            //var quantitynew = 2;
+
+            //product and gift card attributes
+            // var attributes = await _productAttributeParser.ParseProductAttributesAsync(product, form, addToCartWarnings);
+
+            //rental attributes
+            // _productAttributeParser.ParseRentalDates(product, form, out var rentalStartDate, out var rentalEndDate);
+
+            var cartType = updatecartitem == null ? (ShoppingCartType)shoppingCartTypeId :
+                //if the item to update is found, then we ignore the specified "shoppingCartTypeId" parameter
+                updatecartitem.ShoppingCartType;
+
+            var customer = await _workContext.GetCurrentCustomerAsync();
+            //await SaveItemAsync(updatecartitem, addToCartWarnings, product, cartType, attributes, customerEnteredPriceConverted, rentalStartDate, rentalEndDate, quantity);
+            await _shoppingCartService.UpdateShoppingCartItemAsync(customer,
+                    itemId, null, Convert.ToDecimal(customerEnteredPriceConverted),
+                    null, null, updateQuantity, true);
+            // await SaveItemAsync(updatecartitem, addToCartWarnings, product, cartType, null, Convert.ToDecimal(customerEnteredPriceConverted), null, null, 2);
+
+            //return result
+            return await GetProductToCartDetailsAsync(addToCartWarnings, cartType, product);
+        }
         [HttpPost, ActionName("Cart")]
         [FormValueRequired("continueshopping")]
         public virtual async Task<IActionResult> ContinueShopping()
@@ -1468,6 +1628,111 @@ namespace Nop.Web.Controllers
 
             model = await _shoppingCartModelFactory.PrepareShoppingCartModelAsync(model, cart);
             return View(model);
+        }
+
+
+        [HttpPost]
+        [Route("ShoppingCart/UpdatePopupCart")]
+        public virtual async Task<IActionResult> UpdatePopupCart(IFormCollection form)
+        {
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.EnableShoppingCart))
+                return RedirectToRoute("Homepage");
+
+            var customer = await _workContext.GetCurrentCustomerAsync();
+            var store = await _storeContext.GetCurrentStoreAsync();
+            var cart = await _shoppingCartService.GetShoppingCartAsync(customer, ShoppingCartType.ShoppingCart, store.Id);
+
+            //get identifiers of items to remove
+            var itemIdsToRemove = form["removefromcart"]
+                .SelectMany(value => value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                .Select(idString => int.TryParse(idString, out var id) ? id : 0)
+                .Distinct().ToList();
+
+            var products = (await _productService.GetProductsByIdsAsync(cart.Select(item => item.ProductId).Distinct().ToArray()))
+                .ToDictionary(item => item.Id, item => item);
+
+            //get order items with changed quantity
+            var itemsWithNewQuantity = cart.Select(item => new
+            {
+                //try to get a new quantity for the item, set 0 for items to remove
+                NewQuantity = itemIdsToRemove.Contains(item.Id) ? 0 : int.TryParse(form[$"itemquantity{item.Id}"], out var quantity) ? quantity : item.Quantity,
+                Item = item,
+                Product = products.ContainsKey(item.ProductId) ? products[item.ProductId] : null
+            }).Where(item => item.NewQuantity != item.Item.Quantity);
+
+            //order cart items
+            //first should be items with a reduced quantity and that require other products; or items with an increased quantity and are required for other products
+            var orderedCart = await itemsWithNewQuantity
+                .OrderByDescendingAwait(async cartItem =>
+                    (cartItem.NewQuantity < cartItem.Item.Quantity &&
+                     (cartItem.Product?.RequireOtherProducts ?? false)) ||
+                    (cartItem.NewQuantity > cartItem.Item.Quantity && cartItem.Product != null && (await _shoppingCartService
+                         .GetProductsRequiringProductAsync(cart, cartItem.Product)).Any()))
+                .ToListAsync();
+
+            //try to update cart items with new quantities and get warnings
+            var warnings = await orderedCart.SelectAwait(async cartItem => new
+            {
+                ItemId = cartItem.Item.Id,
+                Warnings = await _shoppingCartService.UpdateShoppingCartItemAsync(customer,
+                    cartItem.Item.Id, cartItem.Item.AttributesXml, cartItem.Item.CustomerEnteredPrice,
+                    cartItem.Item.RentalStartDateUtc, cartItem.Item.RentalEndDateUtc, cartItem.NewQuantity, true)
+            }).ToListAsync();
+
+            //updated cart
+            cart = await _shoppingCartService.GetShoppingCartAsync(customer, ShoppingCartType.ShoppingCart, store.Id);
+
+            //parse and save checkout attributes
+            await ParseAndSaveCheckoutAttributesAsync(cart, form);
+
+            //prepare model
+            var model = new ShoppingCartModel();
+            model = await _shoppingCartModelFactory.PrepareShoppingCartModelAsync(model, cart);
+
+            //update current warnings
+            foreach (var warningItem in warnings.Where(warningItem => warningItem.Warnings.Any()))
+            {
+                //find shopping cart item model to display appropriate warnings
+                var itemModel = model.Items.FirstOrDefault(item => item.Id == warningItem.ItemId);
+                if (itemModel != null)
+                    itemModel.Warnings = warningItem.Warnings.Concat(itemModel.Warnings).Distinct().ToList();
+            }
+
+
+
+            //await _customerActivityService.InsertActivityAsync("PublicStore.AddToShoppingCart",
+            //                string.Format(await _localizationService.GetResourceAsync("ActivityLog.PublicStore.AddToShoppingCart"), product.Name), product);
+
+            //if (_shoppingCartSettings.DisplayCartAfterAddingProduct || forceredirection)
+            //{
+            //    //redirect to the shopping cart page
+            //    return Json(new
+            //    {
+            //        redirect = Url.RouteUrl("ShoppingCart")
+            //    });
+            //}
+
+            ////display notification message and update appropriate blocks
+            //var shoppingCarts = await _shoppingCartService.GetShoppingCartAsync(customer, ShoppingCartType.ShoppingCart, store.Id);
+
+            //display notification message and update appropriate blocks
+            var shoppingCarts = await _shoppingCartService.GetShoppingCartAsync(customer, ShoppingCartType.ShoppingCart, store.Id);
+
+            //var customer = await _workContext.GetCurrentCustomerAsync();
+            //var store = await _storeContext.GetCurrentStoreAsync();
+
+            var updatetopcartsectionhtml = string.Format(await _localizationService.GetResourceAsync("ShoppingCart.HeaderQuantity"),
+                shoppingCarts.Sum(item => item.Quantity));
+
+            var updateflyoutcartsectionhtml = await RenderViewComponentToStringAsync(typeof(FlyoutShoppingCartViewComponent));
+
+            return Json(new
+            {
+                success = true,
+                message = string.Format(await _localizationService.GetResourceAsync("Products.ProductHasBeenAddedToTheCart.Link"), Url.RouteUrl("ShoppingCart")),
+                updatetopcartsectionhtml,
+                updateflyoutcartsectionhtml
+            });
         }
 
         #endregion

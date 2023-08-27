@@ -1,5 +1,5 @@
 ﻿@model CheckoutProgressModel
-<div class="order-progress">
+<div class="order-progress" style="margin: 0px;">
     <ul>
        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.CheckoutProgressBefore, additionalData = Model })
         <li class="active-step">

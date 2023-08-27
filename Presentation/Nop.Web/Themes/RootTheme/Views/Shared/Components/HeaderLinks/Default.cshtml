@@ -27,16 +27,22 @@
             //close lateral menu (if it's open)
             $menu_navigation.removeClass('speed-in');
             toggle_panel_visibility($lateral_cart, $shadow_layer, $('body'));
+            $("#cd-cart").addClass('speed-in');
+            $shadow_layer.addClass('is-visible');
+
         });
 
         //close lateral cart or lateral menu
         $shadow_layer.on('click', function () {
+            $("#cd-cart").removeClass('speed-in');
+
             $shadow_layer.removeClass('is-visible');
             // firefox transitions break when parent overflow is changed, so we need to wait for the end of the trasition to give the body an overflow hidden
             if ($lateral_cart.hasClass('speed-in')) {
                 $lateral_cart.removeClass('speed-in').on('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function () {
                     $('body').removeClass('overflow-hidden');
                 });
+                $lateral_cart.removeClass('speed-in')
                 $menu_navigation.removeClass('speed-in');
             } else {
                 $menu_navigation.removeClass('speed-in').on('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function () {
@@ -45,7 +51,25 @@
                 $lateral_cart.removeClass('speed-in');
             }
         });
+        $(".closes").on('click', function () {
+            
+            $("#cd-cart").removeClass('speed-in');
 
+             $shadow_layer.removeClass('is-visible');
+            // firefox transitions break when parent overflow is changed, so we need to wait for the end of the trasition to give the body an overflow hidden
+            if ($lateral_cart.hasClass('speed-in')) {
+                $lateral_cart.removeClass('speed-in').on('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function () {
+                    $('body').removeClass('overflow-hidden');
+                });
+                $lateral_cart.removeClass('speed-in')
+                $menu_navigation.removeClass('speed-in');
+            } else {
+                $menu_navigation.removeClass('speed-in').on('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function () {
+                    $('body').removeClass('overflow-hidden');
+                });
+                $lateral_cart.removeClass('speed-in');
+            }
+        });
         //move #main-navigation inside header on laptop
         //insert #main-navigation after header on mobile
         move_navigation($menu_navigation, $L);
@@ -167,7 +191,7 @@
                     $('.header-links-wrapper').on('mouseenter', '#topcartlink', function () {
             @*$('#flyout-cart').addClass('active');
                         $('#cd-cart').addClass('active');*@
-                            });
+                                        });
                 $('.header-links-wrapper').on('mouseleave', '#topcartlink', function () {
                     $('#flyout-cart').removeClass('active');
                 });
@@ -181,5 +205,3 @@
         </script>
     }
 </nav>
-
-

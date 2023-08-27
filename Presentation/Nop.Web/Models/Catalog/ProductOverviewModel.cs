@@ -22,6 +22,7 @@ namespace Nop.Web.Models.Catalog
         public string SeName { get; set; }
 
         public string Sku { get; set; }
+        public string Stockquantity { get; set; }
 
         public ProductType ProductType { get; set; }
 
@@ -44,6 +45,8 @@ namespace Nop.Web.Models.Catalog
             public decimal? OldPriceValue { get; set; }
             public string Price { get; set; }
             public decimal? PriceValue { get; set; }
+            public string? saveprice { get; set; }
+
             /// <summary>
             /// PAngV baseprice (used in Germany)
             /// </summary>

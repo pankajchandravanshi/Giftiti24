@@ -1371,7 +1371,8 @@ namespace Nop.Web.Factories
                     ShortDescription = await _localizationService.GetLocalizedAsync(product, x => x.ShortDescription),
                     FullDescription = await _localizationService.GetLocalizedAsync(product, x => x.FullDescription),
                     SeName = await _urlRecordService.GetSeNameAsync(product),
-                    Sku = product.StockQuantity.ToString(),
+                    Sku = product.Sku,
+                    Stockquantity = product.StockQuantity.ToString(),
                     ProductType = product.ProductType,
                     MarkAsNew = product.MarkAsNew &&
                         (!product.MarkAsNewStartDateTimeUtc.HasValue || product.MarkAsNewStartDateTimeUtc.Value < DateTime.UtcNow) &&
